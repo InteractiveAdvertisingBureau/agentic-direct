@@ -5,7 +5,7 @@
 
 class A2AClient {
     constructor() {
-        this.serverUrl = 'http://localhost:3000';
+        this.serverUrl = '';
         this.currentAgent = 'buyer';
         this.agentCard = null;
         this.tasks = new Map();
@@ -55,7 +55,7 @@ class A2AClient {
 
         // Update server URL
         document.getElementById('serverUrl').addEventListener('change', (e) => {
-            this.serverUrl = e.target.value;
+            this.serverUrl = e.target.value.trim().replace(/\/+$/, '');
         });
     }
 
@@ -63,6 +63,17 @@ class A2AClient {
         const btn = document.getElementById('connectBtn');
         btn.disabled = true;
         btn.innerHTML = 'Connecting... <span class="loading"></span>';
+
+        // Get server URL from input field and remove trailing slash
+        this.serverUrl = document.getElementById('serverUrl').value.trim().replace(/\/+$/, '');
+
+        if (!this.serverUrl) {
+            this.log('error', 'Server URL is required');
+            this.addSystemMessage('❌ Please enter a server URL');
+            btn.disabled = false;
+            btn.textContent = 'Connect';
+            return;
+        }
 
         try {
             this.log('info', `Connecting to ${this.currentAgent} agent at ${this.serverUrl}`);
@@ -394,7 +405,7 @@ class A2AClient {
     }
 
     generateId() {
-        return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     }
 
     escapeHtml(text) {

@@ -66,6 +66,32 @@ async function startServer() {
     });
   });
 
+  // MCP HTTP/SSE endpoint
+  const mcpTransport = mcpServer.createHttpTransport();
+  const mcpServerInstance = mcpServer.getServer();
+
+  mcpServerInstance.connect(mcpTransport).then(() => {
+    console.log('✅ MCP HTTP transport connected');
+  }).catch((error) => {
+    console.error('❌ MCP HTTP transport connection failed:', error);
+  });
+
+  app.all('/mcp/sse', async (req, res) => {
+    await mcpTransport.handleRequest(req, res, req.body);
+  });
+
+  // MCP info endpoint
+  app.get('/mcp/info', (req, res) => {
+    res.json({
+      name: 'A2A AgenticDirect MCP Server',
+      version: '1.0.0',
+      specification: 'MCP',
+      tools: tools.length,
+      endpoint: '/mcp/sse',
+      toolsList: tools.map(t => t.name)
+    });
+  });
+
   // Create A2A routers for buyer and seller agents
   const buyerRouter = new A2ARouter('buyer', toolHandlers, tools, config.openaiApiKey);
   const sellerRouter = new A2ARouter('seller', toolHandlers, tools, config.openaiApiKey);
@@ -109,8 +135,8 @@ async function startServer() {
     });
   });
 
-  // Start server
-  app.listen(config.port, () => {
+  // Start server - bind to 0.0.0.0 for Cloud Run
+  app.listen(config.port, '0.0.0.0', () => {
     console.log(`\n✅ Server running on port ${config.port}`);
     console.log(`\n📋 Available endpoints:`);
     console.log(`   GET  http://localhost:${config.port}/`);

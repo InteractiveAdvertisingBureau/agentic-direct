@@ -112,9 +112,15 @@ h3 {
 
 .server-url {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.server-url > div {
+    display: flex;
     gap: 10px;
     align-items: center;
-    margin-bottom: 20px;
 }
 
 .server-url label {
@@ -128,6 +134,13 @@ h3 {
     border: 2px solid var(--border);
     border-radius: 6px;
     font-size: 1rem;
+}
+
+.help-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-left: 0;
+    display: block;
 }
 
 .btn {

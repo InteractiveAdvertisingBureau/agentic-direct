@@ -33,3 +33,7 @@ coverage/
 # Temporary files
 *.tmp
 .temp/
+
+deploy.sh
+Dockerfile
+.dockerignore

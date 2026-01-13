@@ -5,6 +5,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -209,6 +210,22 @@ export class MCPServer {
    */
   getTools(): MCPTool[] {
     return this.tools;
+  }
+
+  /**
+   * Get the underlying MCP server instance
+   */
+  getServer(): Server {
+    return this.server;
+  }
+
+  /**
+   * Create HTTP transport for MCP
+   */
+  createHttpTransport(): StreamableHTTPServerTransport {
+    return new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined // Stateless mode
+    });
   }
 
   /**

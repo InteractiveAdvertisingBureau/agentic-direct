@@ -17,7 +17,7 @@ export class SchemaParser {
   private resources: string[] = [];
 
   constructor(schemaPath?: string) {
-    const path = schemaPath || join(__dirname, '../../../opendirect.json');
+    const path = schemaPath || join(__dirname, '../../opendirect.json');
     const schemaContent = readFileSync(path, 'utf-8');
     this.schema = JSON.parse(schemaContent);
   }

@@ -27,9 +27,12 @@
             </div>
 
             <div class="server-url">
-                <label for="serverUrl">Server URL:</label>
-                <input type="text" id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
-                <button id="connectBtn" class="btn btn-primary">Connect</button>
+                <div>
+                    <label for="serverUrl">Server URL:</label>
+                    <input type="text" id="serverUrl" placeholder="e.g., http://localhost:3000 or https://your-server.run.app">
+                    <button id="connectBtn" class="btn btn-primary">Connect</button>
+                </div>
+                <small class="help-text">💡 Enter only the base URL. The agent path (/a2a/buyer or /a2a/seller) will be added automatically.</small>
             </div>
 
             <div id="agentInfo" class="agent-info" style="display: none;">
