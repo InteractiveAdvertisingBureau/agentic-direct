@@ -76,7 +76,20 @@ async function startServer() {
   });
 
   app.all('/mcp/sse', async (req, res) => {
-    await mcpTransport.handleRequest(req, res, req.body);
+    try {
+      // For GET requests (SSE streaming), don't pass body
+      // For POST requests (message exchange), pass body
+      if (req.method === 'GET') {
+        await mcpTransport.handleRequest(req, res);
+      } else {
+        await mcpTransport.handleRequest(req, res, req.body);
+      }
+    } catch (error) {
+      console.error('❌ MCP SSE error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
   });
 
   // MCP info endpoint
