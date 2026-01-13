@@ -9,13 +9,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { AGENT_CARD_PATH } from '@a2a-js/sdk';
 import { AgentCardGenerator } from './agent-card.js';
 import { AgentExecutor } from './executor.js';
+import type { MCPServer } from '../mcp/mcp-server.js';
 import type {
   JSONRPCRequest,
   JSONRPCResponse,
   JSONRPCError,
   Task,
   Message,
-  MCPToolHandler,
   MCPTool,
   EventBus
 } from '../types/index.js';
@@ -23,19 +23,19 @@ import type {
 export class A2ARouter {
   private router: Router;
   private role: 'buyer' | 'seller';
-  private toolHandlers: Map<string, MCPToolHandler>;
+  private mcpServer: MCPServer;
   private tools: MCPTool[];
   private tasks: Map<string, Task> = new Map();
   private openaiApiKey: string;
 
   constructor(
     role: 'buyer' | 'seller',
-    toolHandlers: Map<string, MCPToolHandler>,
+    mcpServer: MCPServer,
     tools: MCPTool[],
     openaiApiKey: string
   ) {
     this.role = role;
-    this.toolHandlers = toolHandlers;
+    this.mcpServer = mcpServer;
     this.tools = tools;
     this.openaiApiKey = openaiApiKey;
     this.router = Router();
@@ -185,7 +185,7 @@ export class A2ARouter {
     // Execute asynchronously
     const executor = new AgentExecutor(
       this.role,
-      this.toolHandlers,
+      this.mcpServer,
       this.tools,
       this.openaiApiKey
     );

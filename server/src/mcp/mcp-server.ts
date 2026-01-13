@@ -220,6 +220,35 @@ export class MCPServer {
   }
 
   /**
+   * Call a tool using MCP protocol
+   * This provides programmatic access to tools through the MCP request/response flow
+   */
+  async callTool(toolName: string, args: any): Promise<any> {
+    console.log(`🔌 MCP Protocol: Calling tool ${toolName}`);
+
+    const handler = this.toolHandlers.get(toolName);
+    if (!handler) {
+      throw new Error(`Tool not found: ${toolName}`);
+    }
+
+    try {
+      const result = await handler(args || {});
+
+      // Return result in MCP response format
+      return {
+        content: [
+          {
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * Create HTTP transport for MCP
    */
   createHttpTransport(): StreamableHTTPServerTransport {

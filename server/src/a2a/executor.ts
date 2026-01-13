@@ -4,22 +4,23 @@
  */
 
 import OpenAI from 'openai';
-import type { ExecutionContext, EventBus, MCPToolHandler, MCPTool, Message, Part } from '../types/index.js';
+import type { MCPServer } from '../mcp/mcp-server.js';
+import type { ExecutionContext, EventBus, MCPTool, Message, Part } from '../types/index.js';
 
 export class AgentExecutor {
   private openai: OpenAI;
-  private toolHandlers: Map<string, MCPToolHandler>;
+  private mcpServer: MCPServer;
   private tools: MCPTool[];
   private role: 'buyer' | 'seller';
 
   constructor(
     role: 'buyer' | 'seller',
-    toolHandlers: Map<string, MCPToolHandler>,
+    mcpServer: MCPServer,
     tools: MCPTool[],
     openaiApiKey: string
   ) {
     this.role = role;
-    this.toolHandlers = toolHandlers;
+    this.mcpServer = mcpServer;
     this.tools = tools;
     this.openai = new OpenAI({ apiKey: openaiApiKey });
   }
@@ -183,15 +184,33 @@ Always return valid JSON.`;
   }
 
   /**
-   * Execute a tool
+   * Execute a tool using MCP protocol
    */
   private async executeTool(toolName: string, params: any): Promise<any> {
-    const handler = this.toolHandlers.get(toolName);
-    if (!handler) {
-      throw new Error(`Tool not found: ${toolName}`);
-    }
+    console.log(`🔌 Calling MCP tool via protocol: ${toolName}`);
 
-    return await handler(params);
+    try {
+      // Execute through MCP server using protocol-compliant call
+      const response = await this.mcpServer.callTool(toolName, params);
+
+      // Extract result from MCP response
+      if (response.content && response.content.length > 0) {
+        const textContent = response.content[0];
+        if (textContent.type === 'text') {
+          // Try to parse JSON response
+          try {
+            return JSON.parse(textContent.text);
+          } catch {
+            return textContent.text;
+          }
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`❌ MCP tool execution failed:`, error);
+      throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**

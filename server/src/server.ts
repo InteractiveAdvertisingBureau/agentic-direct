@@ -30,7 +30,6 @@ async function startServer() {
   const mcpServer = new MCPServer();
   await mcpServer.initialize();
 
-  const toolHandlers = mcpServer.getToolHandlers();
   const tools = mcpServer.getTools();
 
   console.log(`\n📊 MCP Server initialized with ${tools.length} tools\n`);
@@ -93,8 +92,8 @@ async function startServer() {
   });
 
   // Create A2A routers for buyer and seller agents
-  const buyerRouter = new A2ARouter('buyer', toolHandlers, tools, config.openaiApiKey);
-  const sellerRouter = new A2ARouter('seller', toolHandlers, tools, config.openaiApiKey);
+  const buyerRouter = new A2ARouter('buyer', mcpServer, tools, config.openaiApiKey);
+  const sellerRouter = new A2ARouter('seller', mcpServer, tools, config.openaiApiKey);
 
   // Mount A2A routers
   app.use('/a2a/buyer', buyerRouter.getRouter());
