@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2A Agent Test Client (SDK)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 A2A Agent Test Client (SDK)</h1>
+            <p class="subtitle">Test OpenDirect Buyer & Seller Agents via Official @a2a-js/sdk</p>
+        </header>
+
+        <div class="connection-panel">
+            <h2>📡 Agent Connection</h2>
+            <div class="agent-selection">
+                <label>
+                    <input type="radio" name="agent" value="buyer" checked>
+                    <span class="agent-label">💼 Buyer Agent</span>
+                </label>
+                <label>
+                    <input type="radio" name="agent" value="seller">
+                    <span class="agent-label">🏪 Seller Agent</span>
+                </label>
+            </div>
+
+            <div class="server-url">
+                <label for="serverUrl">Server URL:</label>
+                <input type="text" id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+                <button id="connectBtn" class="btn btn-primary">Connect</button>
+            </div>
+
+            <div id="agentInfo" class="agent-info" style="display: none;">
+                <h3>✅ Connected to Agent</h3>
+                <div id="agentDetails"></div>
+            </div>
+        </div>
+
+        <div class="chat-panel">
+            <h2>💬 Chat</h2>
+            <div id="chatMessages" class="chat-messages"></div>
+
+            <div class="input-area">
+                <textarea
+                    id="messageInput"
+                    placeholder="Type your message here... (e.g., 'create account for Nike', 'search products')"
+                    rows="3"
+                ></textarea>
+                <button id="sendBtn" class="btn btn-primary" disabled>Send Message</button>
+            </div>
+
+            <div class="quick-actions">
+                <h3>Quick Actions:</h3>
+                <button class="btn btn-secondary quick-btn" data-message="create account for Nike">Create Account</button>
+                <button class="btn btn-secondary quick-btn" data-message="search products">Search Products</button>
+                <button class="btn btn-secondary quick-btn" data-message="list products">List Products</button>
+                <button class="btn btn-secondary quick-btn" data-message="create order">Create Order</button>
+            </div>
+        </div>
+
+        <div class="task-panel">
+            <h2>📋 Active Tasks</h2>
+            <div id="taskList" class="task-list"></div>
+        </div>
+
+        <div class="debug-panel">
+            <h2>🔍 Debug Log</h2>
+            <div id="debugLog" class="debug-log"></div>
+            <button id="clearDebugBtn" class="btn btn-secondary">Clear Log</button>
+        </div>
+    </div>
+
+    <script type="module" src="dist/bundle.js"></script>
+</body>
+</html>

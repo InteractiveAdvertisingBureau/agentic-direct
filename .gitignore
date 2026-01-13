@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Environment files
+.env
+
+# Service account keys
+*.pem
+*.key
+
+# Build output
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+.temp/

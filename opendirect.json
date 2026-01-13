@@ -1,0 +1,3049 @@
+{
+  "name": "opendirect-mcp-server",
+  "version": "2.1.0",
+  "description": "MCP Server implementation of IAB Tech Lab OpenDirect v2.1 specification for programmatic direct advertising inventory management",
+  "metadata": {
+    "specification": "OpenDirect v2.1 Final",
+    "organization": "IAB Technology Laboratory",
+    "license": "Creative Commons Attribution 3.0",
+    "website": "https://iabtechlab.com/opendirect",
+    "baseUrl": "https://opendirect.example.com/v2.1",
+    "schemes": [
+      "HTTPS"
+    ],
+    "consumes": [
+      "application/json"
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "referencedSpecifications": [
+      "AdCOM",
+      "OpenRTB",
+      "DP-AA DOOH Extension"
+    ]
+  },
+  "schemas": {
+    "OpenDirect.Account": {
+      "type": "object",
+      "description": "Defines a buyer-advertiser relationship for managing orders",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "System-generated opaque ID"
+        },
+        "advertiserid": {
+          "type": "string",
+          "description": "Organization ID acting as advertiser"
+        },
+        "buyerid": {
+          "type": "string",
+          "description": "Organization ID acting as buyer/agency"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 36,
+          "description": "Account display name"
+        },
+        "ext": {
+          "type": "object",
+          "description": "Provider-defined extension data"
+        }
+      },
+      "required": [
+        "advertiserid",
+        "buyerid",
+        "name"
+      ]
+    },
+    "OpenDirect.Order": {
+      "type": "object",
+      "description": "Specifies campaign plan with dates, budget, and currency for all line items",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "System-generated opaque ID"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Order display name"
+        },
+        "accountid": {
+          "type": "string",
+          "description": "Account ID owning the order"
+        },
+        "publisherid": {
+          "type": "string",
+          "description": "Publisher ID providing this order"
+        },
+        "brand": {
+          "type": "string",
+          "maxLength": 25,
+          "description": "Brand name being advertised"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "IAB1",
+              "IAB1-1",
+              "IAB1-2"
+            ]
+          },
+          "description": "IAB Tech Lab Content Taxonomy categories"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO-4217 currency code"
+        },
+        "budget": {
+          "type": "number",
+          "description": "Estimated budget (directional)"
+        },
+        "orderstatus": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "readOnly": true
+        },
+        "packageonly": {
+          "type": "boolean",
+          "readOnly": true,
+          "description": "Whether inventory is only available as package"
+        },
+        "preferredbillingmethod": {
+          "type": "string",
+          "enum": [
+            "Electronic",
+            "Postal"
+          ],
+          "default": "Electronic"
+        },
+        "startdate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Order start date (ISO 8601)"
+        },
+        "enddate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Order end date (ISO 8601)"
+        },
+        "orderexpirydate": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "description": "Date when reserved inventory expires"
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/OpenDirect.Contact"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "accountid",
+        "publisherid",
+        "currency"
+      ]
+    },
+    "OpenDirect.Line": {
+      "type": "object",
+      "description": "Line items providing details about products being booked",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "orderid": {
+          "type": "string"
+        },
+        "productid": {
+          "type": "string"
+        },
+        "bookingstatus": {
+          "type": "string",
+          "enum": [
+            "Draft",
+            "PendingReservation",
+            "Reserved",
+            "PendingBooking",
+            "Booked",
+            "InFlight",
+            "Finished",
+            "Stopped",
+            "Canceled",
+            "Pause",
+            "Expired",
+            "Declined",
+            "ChangePending"
+          ]
+        },
+        "statechangereason": {
+          "type": "string",
+          "readOnly": true
+        },
+        "startdate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "enddate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ratetype": {
+          "type": "string",
+          "enum": [
+            "CPM",
+            "CPMV",
+            "CPC",
+            "CPD",
+            "FlatRate"
+          ]
+        },
+        "rate": {
+          "type": "number",
+          "readOnly": true,
+          "description": "Price per unit (determined at save)"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Requested quantity (impressions for CPM)"
+        },
+        "cost": {
+          "type": "number",
+          "readOnly": true,
+          "description": "Projected cost based on quantity and rate"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "frequencycount": {
+          "type": "integer",
+          "description": "Max times user sees ads in interval"
+        },
+        "frequencyinterval": {
+          "type": "string",
+          "enum": [
+            "Day",
+            "Month",
+            "Week",
+            "Hour",
+            "LineDuration"
+          ]
+        },
+        "reservedexpirydate": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "targeting": {
+          "$ref": "#/schemas/AdCOM.Segment",
+          "description": "User segment targeting"
+        },
+        "pmp": {
+          "$ref": "#/schemas/OpenRTB.PMP"
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "orderid",
+        "productid",
+        "startdate",
+        "enddate",
+        "ratetype",
+        "quantity"
+      ]
+    },
+    "OpenDirect.Product": {
+      "type": "object",
+      "description": "Product catalog item from ad placement to Run of Network",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "publisherid": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 38
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "activedate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "allownocreative": {
+          "type": "boolean",
+          "description": "Allow booking without creative assigned"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "baseprice": {
+          "type": "number",
+          "description": "Base retail price (not rate card)"
+        },
+        "deliverytype": {
+          "type": "string",
+          "enum": [
+            "Exclusive",
+            "Guaranteed",
+            "PMP - Prioritized",
+            "PMP - Non-prioritized",
+            "PMP - First Look",
+            "OpenRTB - Deal",
+            "OpenRTB - Guaranteed Deal"
+          ]
+        },
+        "estdailyavails": {
+          "type": "string",
+          "description": "Estimated daily impression range"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain name"
+        },
+        "icon": {
+          "type": "string",
+          "description": "URL to 150x150 thumbnail icon (max 10KB)"
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+          },
+          "description": "ISO-639-1 language codes"
+        },
+        "leadtime": {
+          "type": "integer",
+          "description": "Days from today that line can begin"
+        },
+        "minspend": {
+          "type": "number",
+          "description": "Minimum order value"
+        },
+        "minflight": {
+          "type": "integer",
+          "description": "Minimum booking days"
+        },
+        "maxflight": {
+          "type": "integer",
+          "description": "Maximum booking days"
+        },
+        "producttags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Search tags"
+        },
+        "ratetype": {
+          "type": "string",
+          "enum": [
+            "CPM",
+            "CPMV",
+            "CPC",
+            "CPD",
+            "FlatRate"
+          ]
+        },
+        "adunit": {
+          "$ref": "#/schemas/OpenDirect.AdUnit"
+        },
+        "alladunits": {
+          "type": "integer",
+          "description": "Whether all child ad units served together"
+        },
+        "retirementdate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tz": {
+          "type": "string",
+          "description": "Product timezone"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to creative requirements spec"
+        },
+        "regs": {
+          "$ref": "#/schemas/OpenRTB.Regs"
+        },
+        "device": {
+          "$ref": "#/schemas/AdCOM.Device"
+        },
+        "geo": {
+          "$ref": "#/schemas/AdCOM.Geo"
+        },
+        "data": {
+          "$ref": "#/schemas/AdCOM.Data"
+        },
+        "source": {
+          "$ref": "#/schemas/OpenRTB.Source"
+        },
+        "pmp": {
+          "$ref": "#/schemas/OpenRTB.PMP"
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "publisherid",
+        "name",
+        "currency",
+        "baseprice",
+        "ratetype",
+        "adunit"
+      ]
+    },
+    "OpenDirect.Creative": {
+      "type": "object",
+      "description": "Ad creative to be displayed for order lines",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "accountid": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        },
+        "creativeasset": {
+          "$ref": "#/schemas/AdCOM.CreativeResp"
+        },
+        "clickurl": {
+          "type": "string"
+        },
+        "iqgmediarating": {
+          "type": "integer",
+          "description": "IQG 2.1 media rating"
+        },
+        "creativeapprovals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "publisherid": {
+                "type": "string"
+              },
+              "approvalstatus": {
+                "type": "string",
+                "enum": [
+                  "Pending",
+                  "Approved",
+                  "Rejected"
+                ]
+              }
+            }
+          }
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "accountid",
+        "creativeasset"
+      ]
+    },
+    "OpenDirect.Assignment": {
+      "type": "object",
+      "description": "Associates a creative with an order line",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "creativeid": {
+          "type": "string"
+        },
+        "placementid": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "readOnly": true
+        },
+        "weight": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Rotation weight (must sum to 100)"
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "creativeid",
+        "placementid"
+      ]
+    },
+    "OpenDirect.Organization": {
+      "type": "object",
+      "description": "Represents an advertiser, agency, or publisher",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "$ref": "#/schemas/OpenDirect.Address"
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/OpenDirect.Contact"
+          }
+        },
+        "disapprovalreason": {
+          "type": "string",
+          "maxLength": 255,
+          "readOnly": true
+        },
+        "fax": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pending",
+            "Approved",
+            "Disapproved",
+            "Limited"
+          ],
+          "readOnly": true
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "contacts"
+      ]
+    },
+    "OpenDirect.Address": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "maxLength": 35
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "ISO-3166-1-alpha-2"
+        },
+        "addressline1": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "addressline2": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "postalcode": {
+          "type": "string",
+          "maxLength": 15
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 35
+        }
+      },
+      "required": [
+        "addressline1",
+        "city",
+        "country"
+      ]
+    },
+    "OpenDirect.Contact": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "$ref": "#/schemas/OpenDirect.Address"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 254
+        },
+        "honorific": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "fax": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "firstname": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "lastname": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Billing",
+            "Buyer",
+            "Creative",
+            "Sales"
+          ]
+        }
+      },
+      "required": [
+        "firstname",
+        "lastname",
+        "type"
+      ]
+    },
+    "OpenDirect.ChangeRequest": {
+      "type": "object",
+      "description": "Request to modify an existing order",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "accountid": {
+          "type": "string",
+          "maxLength": 36
+        },
+        "comments": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/OpenDirect.Contact"
+          }
+        },
+        "orderid": {
+          "type": "string",
+          "maxLength": 36
+        },
+        "requesterid": {
+          "type": "string",
+          "maxLength": 36,
+          "description": "Organization ID of requester"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "readOnly": true
+        },
+        "webhook": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "URI called on approval/rejection"
+        },
+        "ext": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "accountid",
+        "orderid",
+        "requesterid"
+      ]
+    },
+    "OpenDirect.Message": {
+      "type": "object",
+      "description": "Communication between buyer and seller",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sender": {
+          "$ref": "#/schemas/OpenDirect.Contact"
+        },
+        "recipient": {
+          "$ref": "#/schemas/OpenDirect.Contact"
+        },
+        "messagedate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "New",
+            "Read",
+            "Deleted"
+          ]
+        },
+        "orderid": {
+          "type": "string"
+        },
+        "lineids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changerequestid": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "replytomessageid": {
+          "type": "string"
+        },
+        "replywebhook": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "messagedate",
+        "status",
+        "orderid"
+      ]
+    },
+    "OpenDirect.Placement": {
+      "type": "object",
+      "description": "Ad unit specifications for a line item",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "lineid": {
+          "type": "string"
+        },
+        "adunitid": {
+          "type": "string"
+        },
+        "creativespec": {
+          "$ref": "#/schemas/AdCOM.CreativeSpec",
+          "description": "Override ad unit specs if provided"
+        }
+      },
+      "required": [
+        "lineid",
+        "adunitid"
+      ]
+    },
+    "OpenDirect.AdUnit": {
+      "type": "object",
+      "description": "Contains AdCOM Ad Specification",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "creativespec": {
+          "$ref": "#/schemas/AdCOM.CreativeSpec"
+        }
+      },
+      "required": [
+        "id",
+        "creativespec"
+      ]
+    },
+    "AdCOM.CreativeSpec": {
+      "type": "object",
+      "description": "Desired characteristics of creatives",
+      "properties": {
+        "battr": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Blocked creative attributes"
+        },
+        "video": {
+          "$ref": "#/schemas/AdCOM.VideoSpec"
+        },
+        "display": {
+          "$ref": "#/schemas/AdCOM.DisplaySpec"
+        },
+        "audio": {
+          "$ref": "#/schemas/AdCOM.AudioSpec"
+        },
+        "dspmgr": {
+          "type": "string",
+          "description": "Ad mediation partner name"
+        },
+        "dspmgrver": {
+          "type": "string"
+        },
+        "clktype": {
+          "type": "integer",
+          "description": "Click type (List 7)"
+        }
+      }
+    },
+    "AdCOM.CreativeResp": {
+      "type": "object",
+      "description": "Creative instance with rendering information",
+      "properties": {
+        "display": {
+          "$ref": "#/schemas/AdCOM.DisplayResp"
+        },
+        "video": {
+          "$ref": "#/schemas/AdCOM.VideoResp"
+        },
+        "audio": {
+          "$ref": "#/schemas/AdCOM.AudioResp"
+        },
+        "iurl": {
+          "type": "string",
+          "description": "Representative image URL for ad quality checking"
+        },
+        "attr": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Creative attributes (List 5)"
+        }
+      }
+    },
+    "AdCOM.VideoSpec": {
+      "type": "object",
+      "properties": {
+        "subtype": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "mindur": {
+          "type": "integer"
+        },
+        "maxdur": {
+          "type": "integer"
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        },
+        "startdelay": {
+          "type": "integer"
+        },
+        "placement": {
+          "type": "integer"
+        },
+        "skipmin": {
+          "type": "integer"
+        },
+        "skipafter": {
+          "type": "integer"
+        },
+        "minbitrate": {
+          "type": "integer"
+        },
+        "maxbitrate": {
+          "type": "integer"
+        },
+        "boxingallowed": {
+          "type": "integer"
+        },
+        "playbackmethod": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "delivery": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "pos": {
+          "type": "integer"
+        },
+        "companiontype": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "apis": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "AdCOM.VideoResp": {
+      "type": "object",
+      "properties": {
+        "subtype": {
+          "type": "integer"
+        },
+        "qagmediarating": {
+          "type": "integer"
+        },
+        "adm": {
+          "type": "string",
+          "description": "Creative markup"
+        },
+        "curl": {
+          "type": "string",
+          "description": "Creative markup URL"
+        },
+        "api": {
+          "type": "integer"
+        },
+        "mimes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AdCOM.DisplaySpec": {
+      "type": "object",
+      "properties": {
+        "subtype": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "bannerformat": {
+          "$ref": "#/schemas/AdCOM.BannerSpec"
+        },
+        "nativeformat": {
+          "$ref": "#/schemas/AdCOM.NativeSpec"
+        },
+        "ampformat": {
+          "$ref": "#/schemas/AdCOM.AMPSpec"
+        },
+        "instl": {
+          "type": "integer",
+          "description": "1=interstitial, 0=not"
+        },
+        "apis": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "AdCOM.DisplayResp": {
+      "type": "object",
+      "properties": {
+        "subtype": {
+          "type": "integer"
+        },
+        "adm": {
+          "type": "string"
+        },
+        "curl": {
+          "type": "string"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        },
+        "wratio": {
+          "type": "integer"
+        },
+        "hratio": {
+          "type": "integer"
+        },
+        "api": {
+          "type": "integer"
+        },
+        "mimes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AdCOM.BannerSpec": {
+      "type": "object",
+      "properties": {
+        "w": {
+          "type": "integer",
+          "description": "Width in DIPS"
+        },
+        "h": {
+          "type": "integer",
+          "description": "Height in DIPS"
+        },
+        "wratio": {
+          "type": "integer"
+        },
+        "hratio": {
+          "type": "integer"
+        },
+        "sized": {
+          "type": "integer",
+          "description": "Ratio-based size (List 8)"
+        },
+        "btype": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Blocked banner types"
+        },
+        "battr": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "pos": {
+          "type": "integer"
+        },
+        "opframe": {
+          "type": "integer",
+          "description": "Top frame vs iframe"
+        },
+        "expdir": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Expandable directions"
+        },
+        "iframebuster": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AdCOM.AudioSpec": {
+      "type": "object",
+      "properties": {
+        "minduration": {
+          "type": "integer"
+        },
+        "maxduration": {
+          "type": "integer"
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "startdelay": {
+          "type": "integer"
+        },
+        "minbitrate": {
+          "type": "integer"
+        },
+        "maxbitrate": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "companiontype": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "maxseq": {
+          "type": "integer"
+        },
+        "nvol": {
+          "type": "integer",
+          "description": "Volume normalization mode"
+        },
+        "apis": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "AdCOM.AudioResp": {
+      "type": "object",
+      "properties": {
+        "subtype": {
+          "type": "integer"
+        },
+        "adm": {
+          "type": "string"
+        },
+        "curl": {
+          "type": "string"
+        },
+        "companionad": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "api": {
+          "type": "integer"
+        }
+      }
+    },
+    "AdCOM.NativeSpec": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "type": "string",
+          "description": "Native Ad Specification request payload"
+        },
+        "ver": {
+          "type": "string",
+          "description": "Dynamic Native Ads API version"
+        }
+      },
+      "required": [
+        "request"
+      ]
+    },
+    "AdCOM.AMPSpec": {
+      "type": "object",
+      "properties": {
+        "rend": {
+          "type": "integer",
+          "description": "AMP ad requirements: 1=unknown, 2=not allowed, 3=allowed no early render, 4=allowed with early render, 5=required"
+        },
+        "ver": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.Site": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sectioncat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pagecat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "page": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "search": {
+          "type": "string"
+        },
+        "mobile": {
+          "type": "integer"
+        },
+        "amp": {
+          "type": "integer"
+        },
+        "privacypolicy": {
+          "type": "integer"
+        },
+        "publisher": {
+          "$ref": "#/schemas/AdCOM.Publisher"
+        },
+        "content": {
+          "$ref": "#/schemas/AdCOM.Content"
+        },
+        "keywords": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.App": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "bundle": {
+          "type": "string"
+        },
+        "storeid": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "storeurl": {
+          "type": "string"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sectioncat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pagecat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ver": {
+          "type": "string"
+        },
+        "privacypolicy": {
+          "type": "integer"
+        },
+        "paid": {
+          "type": "integer"
+        },
+        "publisher": {
+          "$ref": "#/schemas/AdCOM.Publisher"
+        },
+        "content": {
+          "$ref": "#/schemas/AdCOM.Content"
+        },
+        "keywords": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.Publisher": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Publisher ID from ads.txt / Organization ID"
+        },
+        "name": {
+          "type": "string"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domain": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.Content": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "episode": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "series": {
+          "type": "string"
+        },
+        "season": {
+          "type": "string"
+        },
+        "artist": {
+          "type": "string"
+        },
+        "genre": {
+          "type": "string"
+        },
+        "album": {
+          "type": "string"
+        },
+        "isrc": {
+          "type": "string"
+        },
+        "producer": {
+          "$ref": "#/schemas/AdCOM.Producer"
+        },
+        "url": {
+          "type": "string"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prodq": {
+          "type": "integer"
+        },
+        "context": {
+          "type": "integer"
+        },
+        "contentrating": {
+          "type": "string"
+        },
+        "userrating": {
+          "type": "string"
+        },
+        "qagmediarating": {
+          "type": "integer"
+        },
+        "keywords": {
+          "type": "string"
+        },
+        "livestream": {
+          "type": "integer"
+        },
+        "sourcerelationship": {
+          "type": "integer"
+        },
+        "len": {
+          "type": "integer"
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        },
+        "embeddable": {
+          "type": "integer"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/AdCOM.Data"
+          }
+        }
+      }
+    },
+    "AdCOM.Producer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domain": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.Device": {
+      "type": "object",
+      "properties": {
+        "ua": {
+          "type": "string",
+          "description": "User agent"
+        },
+        "geo": {
+          "$ref": "#/schemas/AdCOM.Geo"
+        },
+        "dnt": {
+          "type": "integer"
+        },
+        "lmt": {
+          "type": "integer"
+        },
+        "ip": {
+          "type": "string"
+        },
+        "ipv6": {
+          "type": "string"
+        },
+        "devicetype": {
+          "type": "integer"
+        },
+        "make": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "osv": {
+          "type": "string"
+        },
+        "hwv": {
+          "type": "string"
+        },
+        "h": {
+          "type": "integer"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "ppi": {
+          "type": "integer"
+        },
+        "pxratio": {
+          "type": "number"
+        },
+        "js": {
+          "type": "integer"
+        },
+        "geofetch": {
+          "type": "integer"
+        },
+        "flashver": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        },
+        "carrier": {
+          "type": "string"
+        },
+        "mccmnc": {
+          "type": "string"
+        },
+        "conntype": {
+          "type": "integer"
+        },
+        "ifa": {
+          "type": "string"
+        },
+        "didsha1": {
+          "type": "string"
+        },
+        "didmd5": {
+          "type": "string"
+        },
+        "dpidsha1": {
+          "type": "string"
+        },
+        "dpidmd5": {
+          "type": "string"
+        },
+        "macsha1": {
+          "type": "string"
+        },
+        "macmd5": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.Geo": {
+      "type": "object",
+      "properties": {
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "type": {
+          "type": "integer"
+        },
+        "accuracy": {
+          "type": "integer"
+        },
+        "lastfix": {
+          "type": "integer"
+        },
+        "ipservice": {
+          "type": "integer"
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "region": {
+          "type": "string"
+        },
+        "regionfips104": {
+          "type": "string"
+        },
+        "metro": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "utcoffset": {
+          "type": "integer"
+        }
+      }
+    },
+    "AdCOM.User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "buyeruid": {
+          "type": "string"
+        },
+        "yob": {
+          "type": "integer"
+        },
+        "gender": {
+          "type": "string",
+          "enum": [
+            "M",
+            "F",
+            "O"
+          ]
+        },
+        "keywords": {
+          "type": "string"
+        },
+        "customdata": {
+          "type": "string"
+        },
+        "geo": {
+          "$ref": "#/schemas/AdCOM.Geo"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/AdCOM.Data"
+          }
+        }
+      }
+    },
+    "AdCOM.Data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "segment": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/AdCOM.Segment"
+          }
+        }
+      }
+    },
+    "AdCOM.Segment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "AdCOM.AdSpec": {
+      "type": "object",
+      "description": "Ad specification for bidding or OpenDirect packages",
+      "properties": {
+        "bcat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blocked advertiser categories"
+        },
+        "badv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blocked advertiser domains"
+        },
+        "bapp": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blocked app IDs"
+        },
+        "creative": {
+          "$ref": "#/schemas/AdCOM.CreativeSpec"
+        },
+        "wlang": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+          },
+          "description": "Whitelisted languages"
+        },
+        "secure": {
+          "type": "integer"
+        },
+        "rewarded": {
+          "type": "integer"
+        },
+        "ps": {
+          "type": "string",
+          "description": "Publisher signature"
+        }
+      }
+    },
+    "AdCOM.AdResp": {
+      "type": "object",
+      "properties": {
+        "dadid": {
+          "type": "string",
+          "description": "Demand-side ad ID"
+        },
+        "sadid": {
+          "type": "string",
+          "description": "Supply-side ad ID"
+        },
+        "creative": {
+          "$ref": "#/schemas/AdCOM.CreativeResp"
+        },
+        "secure": {
+          "type": "integer"
+        },
+        "audit": {
+          "type": "object"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "adomain": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "bundle": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "cat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lang": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        }
+      }
+    },
+    "OpenRTB.Deal": {
+      "type": "object",
+      "description": "Direct deal between buyer and seller",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique deal identifier"
+        },
+        "bidfloor": {
+          "type": "number",
+          "description": "Minimum bid CPM"
+        },
+        "bidfloorcur": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "at": {
+          "type": "integer",
+          "description": "Auction type: 1=First Price, 2=Second Price Plus, 3=Fixed Price"
+        },
+        "wseat": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Whitelist of buyer seats"
+        },
+        "wadomain": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Whitelisted advertiser domains"
+        },
+        "ext": {
+          "type": "object"
+        }
+      }
+    },
+    "OpenRTB.PMP": {
+      "type": "object",
+      "description": "Private marketplace container for direct deals",
+      "properties": {
+        "private_auction": {
+          "type": "integer",
+          "description": "0=all bids accepted, 1=restricted to deals"
+        },
+        "deals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/OpenRTB.Deal"
+          }
+        },
+        "ext": {
+          "type": "object"
+        }
+      }
+    },
+    "OpenRTB.Regs": {
+      "type": "object",
+      "description": "Legal and regulatory requirements",
+      "properties": {
+        "coppa": {
+          "type": "integer",
+          "description": "0=not subject to COPPA, 1=subject to COPPA"
+        },
+        "ext": {
+          "type": "object"
+        }
+      }
+    },
+    "OpenRTB.Source": {
+      "type": "object",
+      "description": "Source of bid request",
+      "properties": {
+        "fd": {
+          "type": "integer",
+          "description": "0=exchange, 1=upstream source"
+        },
+        "tid": {
+          "type": "string",
+          "description": "Transaction ID"
+        },
+        "pchain": {
+          "type": "string",
+          "description": "Payment ID chain (TAG Payment ID Protocol)"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "create_account",
+      "description": "Create a new Account. Defines a buyer-advertiser relationship for managing orders",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "advertiserid": {
+            "type": "string",
+            "description": "Organization ID acting as advertiser"
+          },
+          "buyerid": {
+            "type": "string",
+            "description": "Organization ID acting as buyer/agency"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 36,
+            "description": "Account display name"
+          },
+          "ext": {
+            "type": "object",
+            "description": "Provider-defined extension data"
+          }
+        },
+        "required": [
+          "advertiserid",
+          "buyerid",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "update_account",
+      "description": "Update an existing Account",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Account to update"
+          },
+          "advertiserid": {
+            "type": "string",
+            "description": "Organization ID acting as advertiser"
+          },
+          "buyerid": {
+            "type": "string",
+            "description": "Organization ID acting as buyer/agency"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 36,
+            "description": "Account display name"
+          },
+          "ext": {
+            "type": "object",
+            "description": "Provider-defined extension data"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_account",
+      "description": "Get a specific Account by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Account to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_accounts",
+      "description": "List all Accounts",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_order",
+      "description": "Create a new Order. Specifies campaign plan with dates, budget, and currency for all line items",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Order display name"
+          },
+          "accountid": {
+            "type": "string",
+            "description": "Account ID owning the order"
+          },
+          "publisherid": {
+            "type": "string",
+            "description": "Publisher ID providing this order"
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 25,
+            "description": "Brand name being advertised"
+          },
+          "cat": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "IAB1",
+                "IAB1-1",
+                "IAB1-2"
+              ]
+            },
+            "description": "IAB Tech Lab Content Taxonomy categories"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO-4217 currency code"
+          },
+          "budget": {
+            "type": "number",
+            "description": "Estimated budget (directional)"
+          },
+          "orderstatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "readOnly": true
+          },
+          "packageonly": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Whether inventory is only available as package"
+          },
+          "preferredbillingmethod": {
+            "type": "string",
+            "enum": [
+              "Electronic",
+              "Postal"
+            ],
+            "default": "Electronic"
+          },
+          "startdate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order start date (ISO 8601)"
+          },
+          "enddate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order end date (ISO 8601)"
+          },
+          "orderexpirydate": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "description": "Date when reserved inventory expires"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/schemas/OpenDirect.Contact"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "accountid",
+          "publisherid",
+          "currency"
+        ]
+      }
+    },
+    {
+      "name": "update_order",
+      "description": "Update an existing Order",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Order to update"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Order display name"
+          },
+          "accountid": {
+            "type": "string",
+            "description": "Account ID owning the order"
+          },
+          "publisherid": {
+            "type": "string",
+            "description": "Publisher ID providing this order"
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 25,
+            "description": "Brand name being advertised"
+          },
+          "cat": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "IAB1",
+                "IAB1-1",
+                "IAB1-2"
+              ]
+            },
+            "description": "IAB Tech Lab Content Taxonomy categories"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO-4217 currency code"
+          },
+          "budget": {
+            "type": "number",
+            "description": "Estimated budget (directional)"
+          },
+          "orderstatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "readOnly": true
+          },
+          "packageonly": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Whether inventory is only available as package"
+          },
+          "preferredbillingmethod": {
+            "type": "string",
+            "enum": [
+              "Electronic",
+              "Postal"
+            ],
+            "default": "Electronic"
+          },
+          "startdate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order start date (ISO 8601)"
+          },
+          "enddate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order end date (ISO 8601)"
+          },
+          "orderexpirydate": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "description": "Date when reserved inventory expires"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/schemas/OpenDirect.Contact"
+            }
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_order",
+      "description": "Get a specific Order by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Order to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_orders",
+      "description": "List all Orders",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_line",
+      "description": "Create a new Line. Line items providing details about products being booked",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "orderid": {
+            "type": "string"
+          },
+          "productid": {
+            "type": "string"
+          },
+          "bookingstatus": {
+            "type": "string",
+            "enum": [
+              "Draft",
+              "PendingReservation",
+              "Reserved",
+              "PendingBooking",
+              "Booked",
+              "InFlight",
+              "Finished",
+              "Stopped",
+              "Canceled",
+              "Pause",
+              "Expired",
+              "Declined",
+              "ChangePending"
+            ]
+          },
+          "statechangereason": {
+            "type": "string",
+            "readOnly": true
+          },
+          "startdate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enddate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ratetype": {
+            "type": "string",
+            "enum": [
+              "CPM",
+              "CPMV",
+              "CPC",
+              "CPD",
+              "FlatRate"
+            ]
+          },
+          "rate": {
+            "type": "number",
+            "readOnly": true,
+            "description": "Price per unit (determined at save)"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Requested quantity (impressions for CPM)"
+          },
+          "cost": {
+            "type": "number",
+            "readOnly": true,
+            "description": "Projected cost based on quantity and rate"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "frequencycount": {
+            "type": "integer",
+            "description": "Max times user sees ads in interval"
+          },
+          "frequencyinterval": {
+            "type": "string",
+            "enum": [
+              "Day",
+              "Month",
+              "Week",
+              "Hour",
+              "LineDuration"
+            ]
+          },
+          "reservedexpirydate": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "targeting": {
+            "$ref": "#/schemas/AdCOM.Segment",
+            "description": "User segment targeting"
+          },
+          "pmp": {
+            "$ref": "#/schemas/OpenRTB.PMP"
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "orderid",
+          "productid",
+          "startdate",
+          "enddate",
+          "ratetype",
+          "quantity"
+        ]
+      }
+    },
+    {
+      "name": "update_line",
+      "description": "Update an existing Line",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Line to update"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "orderid": {
+            "type": "string"
+          },
+          "productid": {
+            "type": "string"
+          },
+          "bookingstatus": {
+            "type": "string",
+            "enum": [
+              "Draft",
+              "PendingReservation",
+              "Reserved",
+              "PendingBooking",
+              "Booked",
+              "InFlight",
+              "Finished",
+              "Stopped",
+              "Canceled",
+              "Pause",
+              "Expired",
+              "Declined",
+              "ChangePending"
+            ]
+          },
+          "statechangereason": {
+            "type": "string",
+            "readOnly": true
+          },
+          "startdate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enddate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ratetype": {
+            "type": "string",
+            "enum": [
+              "CPM",
+              "CPMV",
+              "CPC",
+              "CPD",
+              "FlatRate"
+            ]
+          },
+          "rate": {
+            "type": "number",
+            "readOnly": true,
+            "description": "Price per unit (determined at save)"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Requested quantity (impressions for CPM)"
+          },
+          "cost": {
+            "type": "number",
+            "readOnly": true,
+            "description": "Projected cost based on quantity and rate"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "frequencycount": {
+            "type": "integer",
+            "description": "Max times user sees ads in interval"
+          },
+          "frequencyinterval": {
+            "type": "string",
+            "enum": [
+              "Day",
+              "Month",
+              "Week",
+              "Hour",
+              "LineDuration"
+            ]
+          },
+          "reservedexpirydate": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "targeting": {
+            "$ref": "#/schemas/AdCOM.Segment",
+            "description": "User segment targeting"
+          },
+          "pmp": {
+            "$ref": "#/schemas/OpenRTB.PMP"
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_line",
+      "description": "Get a specific Line by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Line to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_lines",
+      "description": "List all Lines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_creative",
+      "description": "Create a new Creative. Ad creative to be displayed for order lines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+          },
+          "creativeasset": {
+            "$ref": "#/schemas/AdCOM.CreativeResp"
+          },
+          "clickurl": {
+            "type": "string"
+          },
+          "iqgmediarating": {
+            "type": "integer",
+            "description": "IQG 2.1 media rating"
+          },
+          "creativeapprovals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "publisherid": {
+                  "type": "string"
+                },
+                "approvalstatus": {
+                  "type": "string",
+                  "enum": [
+                    "Pending",
+                    "Approved",
+                    "Rejected"
+                  ]
+                }
+              }
+            }
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "accountid",
+          "creativeasset"
+        ]
+      }
+    },
+    {
+      "name": "update_creative",
+      "description": "Update an existing Creative",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Creative to update"
+          },
+          "accountid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+          },
+          "creativeasset": {
+            "$ref": "#/schemas/AdCOM.CreativeResp"
+          },
+          "clickurl": {
+            "type": "string"
+          },
+          "iqgmediarating": {
+            "type": "integer",
+            "description": "IQG 2.1 media rating"
+          },
+          "creativeapprovals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "publisherid": {
+                  "type": "string"
+                },
+                "approvalstatus": {
+                  "type": "string",
+                  "enum": [
+                    "Pending",
+                    "Approved",
+                    "Rejected"
+                  ]
+                }
+              }
+            }
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_creative",
+      "description": "Get a specific Creative by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Creative to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_creatives",
+      "description": "List all Creatives",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_assignment",
+      "description": "Create a new Assignment. Associates a creative with an order line",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "creativeid": {
+            "type": "string"
+          },
+          "placementid": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Inactive"
+            ],
+            "readOnly": true
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Rotation weight (must sum to 100)"
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "creativeid",
+          "placementid"
+        ]
+      }
+    },
+    {
+      "name": "delete_assignment",
+      "description": "Delete a Assignment",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Assignment to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_assignment",
+      "description": "Get a specific Assignment by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Assignment to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_assignments",
+      "description": "List all Assignments",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_organization",
+      "description": "Create a new Organization. Represents an advertiser, agency, or publisher",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/schemas/OpenDirect.Address"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/schemas/OpenDirect.Contact"
+            }
+          },
+          "disapprovalreason": {
+            "type": "string",
+            "maxLength": 255,
+            "readOnly": true
+          },
+          "fax": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "cat": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Approved",
+              "Disapproved",
+              "Limited"
+            ],
+            "readOnly": true
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "contacts"
+        ]
+      }
+    },
+    {
+      "name": "update_organization",
+      "description": "Update an existing Organization",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Organization to update"
+          },
+          "address": {
+            "$ref": "#/schemas/OpenDirect.Address"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/schemas/OpenDirect.Contact"
+            }
+          },
+          "disapprovalreason": {
+            "type": "string",
+            "maxLength": 255,
+            "readOnly": true
+          },
+          "fax": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "cat": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Approved",
+              "Disapproved",
+              "Limited"
+            ],
+            "readOnly": true
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "get_organization",
+      "description": "Get a specific Organization by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Organization to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_organizations",
+      "description": "List all Organizations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_product",
+      "description": "Get a specific Product by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Product to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_products",
+      "description": "List all Products",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "search_products",
+      "description": "Search Products",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          }
+        }
+      }
+    },
+    {
+      "name": "create_changerequest",
+      "description": "Create a new ChangeRequest. Request to modify an existing order",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accountid": {
+            "type": "string",
+            "maxLength": 36
+          },
+          "comments": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/schemas/OpenDirect.Contact"
+            }
+          },
+          "orderid": {
+            "type": "string",
+            "maxLength": 36
+          },
+          "requesterid": {
+            "type": "string",
+            "maxLength": 36,
+            "description": "Organization ID of requester"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "readOnly": true
+          },
+          "webhook": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "URI called on approval/rejection"
+          },
+          "ext": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "accountid",
+          "orderid",
+          "requesterid"
+        ]
+      }
+    },
+    {
+      "name": "get_changerequest",
+      "description": "Get a specific ChangeRequest by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of ChangeRequest to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_changerequests",
+      "description": "List all ChangeRequests",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "create_message",
+      "description": "Create a new Message. Communication between buyer and seller",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sender": {
+            "$ref": "#/schemas/OpenDirect.Contact"
+          },
+          "recipient": {
+            "$ref": "#/schemas/OpenDirect.Contact"
+          },
+          "messagedate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "New",
+              "Read",
+              "Deleted"
+            ]
+          },
+          "orderid": {
+            "type": "string"
+          },
+          "lineids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changerequestid": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "replytomessageid": {
+            "type": "string"
+          },
+          "replywebhook": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "messagedate",
+          "status",
+          "orderid"
+        ]
+      }
+    },
+    {
+      "name": "get_message",
+      "description": "Get a specific Message by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of Message to retrieve"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_messages",
+      "description": "List all Messages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "opendirect://accounts",
+      "name": "Accounts",
+      "description": "Defines a buyer-advertiser relationship for managing orders",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://orders",
+      "name": "Orders",
+      "description": "Specifies campaign plan with dates, budget, and currency for all line items",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://lines",
+      "name": "Lines",
+      "description": "Line items providing details about products being booked",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://products",
+      "name": "Products",
+      "description": "Product catalog item from ad placement to Run of Network",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://creatives",
+      "name": "Creatives",
+      "description": "Ad creative to be displayed for order lines",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://assignments",
+      "name": "Assignments",
+      "description": "Associates a creative with an order line",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://organizations",
+      "name": "Organizations",
+      "description": "Represents an advertiser, agency, or publisher",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://addresss",
+      "name": "Addresss",
+      "description": "Collection of Address objects",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://contacts",
+      "name": "Contacts",
+      "description": "Collection of Contact objects",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://changerequests",
+      "name": "ChangeRequests",
+      "description": "Request to modify an existing order",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://messages",
+      "name": "Messages",
+      "description": "Communication between buyer and seller",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://placements",
+      "name": "Placements",
+      "description": "Ad unit specifications for a line item",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "opendirect://adunits",
+      "name": "AdUnits",
+      "description": "Contains AdCOM Ad Specification",
+      "mimeType": "application/json"
+    }
+  ]
+}

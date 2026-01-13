@@ -1,0 +1,12 @@
+{
+  "name": "a2a-agenticdirect-client-html",
+  "version": "1.0.0",
+  "description": "A2A AgenticDirect Client - Static HTML UI",
+  "scripts": {
+    "start": "http-server . -p 8080 --cors",
+    "dev": "http-server . -p 8080 --cors -o"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
