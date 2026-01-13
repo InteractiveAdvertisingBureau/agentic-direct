@@ -169,7 +169,7 @@ class A2AClient {
             const endpoint = `${this.serverUrl}/a2a/${this.currentAgent}/jsonrpc`;
             const rpcRequest = {
                 jsonrpc: '2.0',
-                method: 'sendMessage',
+                method: 'message/send',  // A2A v0.3.0 official method name
                 params: { message },
                 id: this.requestId++
             };
@@ -192,12 +192,44 @@ class A2AClient {
                 throw new Error(`JSON-RPC Error: ${result.error.message}`);
             }
 
+            // Debug: Log full response structure
+            console.log('Full SDK response:', result);
             this.log('info', `Response received: ${JSON.stringify(result.result)}`);
 
-            // Handle response
-            const taskData = result.result;
-            if (taskData) {
-                this.handleTask(taskData);
+            // Handle response - SDK returns either Message or Task
+            const responseData = result.result;
+            if (responseData) {
+                this.log('info', `Response kind: ${responseData.kind}, has status: ${!!responseData.status}, has history: ${!!responseData.history}`);
+
+                // Check if it's a Task (has status) or Message (has parts)
+                if (responseData.kind === 'task') {
+                    this.log('info', 'Handling as Task');
+                    this.handleTask(responseData);
+                } else if (responseData.kind === 'message') {
+                    // SDK returned immediate Message (operation completed quickly)
+                    this.log('info', 'Received immediate message response - creating task representation');
+
+                    // Create a pseudo-task for display purposes
+                    const pseudoTask = {
+                        kind: 'task',
+                        id: responseData.taskId,
+                        contextId: responseData.contextId,
+                        status: {
+                            state: 'completed'
+                        },
+                        history: [
+                            message, // Original user message
+                            responseData // Agent's response message
+                        ]
+                    };
+
+                    // handleTask will process the history and display the agent message
+                    this.handleTask(pseudoTask);
+                } else {
+                    this.log('error', `Unknown response type: ${responseData.kind || 'no kind'}`);
+                }
+            } else {
+                this.log('error', 'No response data received');
             }
 
         } catch (error) {
@@ -207,18 +239,46 @@ class A2AClient {
     }
 
     handleTask(task) {
-        this.log('info', `Task created: ${task.id}, status: ${task.status.state}`);
+        // Debug: Log full task structure
+        console.log('=== handleTask called ===');
+        console.log('Task ID:', task.id);
+        console.log('Task status:', task.status);
+        console.log('Task history length:', task.history?.length);
 
-        // Store task
+        // Defensive check for task structure
+        if (!task || !task.status) {
+            this.log('error', `Invalid task structure: ${JSON.stringify(task)}`);
+            return;
+        }
+
+        this.log('info', `Task: ${task.id}, status: ${task.status.state}`);
+
+        // Check if we've already processed this task
+        const existingTask = this.tasks.get(task.id);
+        const existingAgentMessageCount = existingTask?.history?.filter(h => h.role === 'agent').length || 0;
+        const newAgentMessageCount = task.history?.filter(h => h.role === 'agent').length || 0;
+
+        console.log('Existing agent messages:', existingAgentMessageCount);
+        console.log('New agent messages:', newAgentMessageCount);
+
+        // Store task BEFORE displaying messages
         this.tasks.set(task.id, task);
+        this.log('info', `Task stored. Total tasks: ${this.tasks.size}`);
 
         // Add to task list
         this.updateTaskList();
 
-        // If task has agent response in history, show it
-        if (task.history && task.history.length > 1) {
+        // Only show NEW agent messages (not already displayed)
+        if (task.history && newAgentMessageCount > existingAgentMessageCount) {
             const agentMessages = task.history.filter(h => h.role === 'agent');
-            agentMessages.forEach(msg => {
+            const newMessages = agentMessages.slice(existingAgentMessageCount);
+
+            console.log('Will display', newMessages.length, 'new messages');
+            this.log('info', `Displaying ${newMessages.length} new agent messages (${existingAgentMessageCount} already shown)`);
+
+            newMessages.forEach((msg, index) => {
+                console.log(`Displaying message ${index + 1}:`, msg.parts?.[0]?.text?.substring(0, 50));
+
                 const textParts = msg.parts?.filter(p => p.kind === 'text') || [];
                 const text = textParts.map(p => p.text).join('\n');
 
@@ -229,10 +289,12 @@ class A2AClient {
                     this.addAgentMessage(text, data);
                 }
             });
+        } else {
+            console.log('No new messages to display');
         }
 
         // Poll for completion if still working
-        if (task.status.state === 'working') {
+        if (task.status && task.status.state === 'working') {
             this.pollTask(task.id);
         }
     }
@@ -258,7 +320,7 @@ class A2AClient {
                 const endpoint = `${this.serverUrl}/a2a/${this.currentAgent}/jsonrpc`;
                 const rpcRequest = {
                     jsonrpc: '2.0',
-                    method: 'getTask',
+                    method: 'task/get',  // A2A v0.3.0 official method name
                     params: { taskId },
                     id: this.requestId++
                 };
@@ -276,12 +338,18 @@ class A2AClient {
 
                 const task = result.result;
 
+                // Validate task structure
+                if (!task || !task.status) {
+                    this.log('error', `Invalid task structure from poll: ${JSON.stringify(task)}`);
+                    return;
+                }
+
                 // Update task in map
                 this.tasks.set(taskId, task);
                 this.updateTaskList();
 
                 // Check for new agent messages
-                const agentMessages = task.history.filter(h => h.role === 'agent');
+                const agentMessages = task.history?.filter(h => h.role === 'agent') || [];
 
                 if (agentMessages.length > shownAgentMessages) {
                     const newMessages = agentMessages.slice(shownAgentMessages);
@@ -324,9 +392,11 @@ class A2AClient {
 
     updateTaskList() {
         const listDiv = document.getElementById('taskList');
+        console.log('updateTaskList called. Tasks count:', this.tasks.size);
 
         if (this.tasks.size === 0) {
             listDiv.innerHTML = '<div class="empty-state">No active tasks</div>';
+            this.log('info', 'No tasks to display');
             return;
         }
 
@@ -334,17 +404,24 @@ class A2AClient {
 
         // Show tasks in reverse chronological order
         const taskArray = Array.from(this.tasks.values()).reverse();
+        console.log('Task array:', taskArray);
         taskArray.forEach(task => {
+            // Skip tasks with invalid structure
+            if (!task || !task.status) {
+                return;
+            }
+
             const taskDiv = document.createElement('div');
             taskDiv.className = 'task-item';
 
-            const userMessage = task.history.find(h => h.role === 'user');
+            const userMessage = task.history?.find(h => h.role === 'user');
             const userText = userMessage?.parts?.[0]?.text || 'No message';
+            const statusState = task.status?.state || 'unknown';
 
             taskDiv.innerHTML = `
                 <div class="task-header">
                     <span class="task-id">🆔 ${task.id.substring(0, 8)}...</span>
-                    <span class="task-status status-${task.status.state}">${task.status.state}</span>
+                    <span class="task-status status-${statusState}">${statusState}</span>
                 </div>
                 <div class="task-content">
                     <strong>Request:</strong> ${userText}

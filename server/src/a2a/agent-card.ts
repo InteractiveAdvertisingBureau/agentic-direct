@@ -3,7 +3,8 @@
  * Creates compliant agent cards per A2A Protocol v0.3.0
  */
 
-import type { AgentCard, MCPTool } from '../types/index.js';
+import type { AgentCard } from '@a2a-js/sdk';
+import type { MCPTool } from '../types/index.js';
 import type { Request } from 'express';
 
 export class AgentCardGenerator {
@@ -41,8 +42,7 @@ export class AgentCardGenerator {
       skills,
       capabilities: {
         pushNotifications: false,
-        streaming: true,
-        mcpIntegration: true
+        streaming: true
       },
       defaultInputModes: ['text/plain', 'application/json'],
       defaultOutputModes: ['text/plain', 'application/json'],
@@ -78,22 +78,16 @@ export class AgentCardGenerator {
       ],
       additionalInterfaces: [
         {
-          protocol: 'jsonrpc',
-          version: '2.0',
           transport: 'http',
           url: `${agentUrl}/jsonrpc`
         },
         {
-          protocol: 'http+json',
-          version: '1.0',
           transport: 'http',
           url: `${agentUrl}/rest`
         },
         {
-          protocol: 'mcp',
-          version: '2024-11-05',
           transport: 'sse',
-          tools: tools.map(t => t.name)
+          url: `${agentUrl}/mcp/sse`
         }
       ]
     };

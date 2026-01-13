@@ -1,17 +1,21 @@
 /**
  * Agent Executor
  * AI-powered execution engine that selects and executes MCP tools
+ * Implements @a2a-js/sdk AgentExecutor interface
  */
 
 import OpenAI from 'openai';
+import type { AgentExecutor as IAgentExecutor, RequestContext, ExecutionEventBus } from '@a2a-js/sdk/server';
+import type { Message } from '@a2a-js/sdk';
 import type { MCPServer } from '../mcp/mcp-server.js';
-import type { ExecutionContext, EventBus, MCPTool, Message, Part } from '../types/index.js';
+import type { MCPTool } from '../types/index.js';
 
-export class AgentExecutor {
+export class AgentExecutor implements IAgentExecutor {
   private openai: OpenAI;
   private mcpServer: MCPServer;
   private tools: MCPTool[];
   private role: 'buyer' | 'seller';
+  private activeTasks: Set<string> = new Set();
 
   constructor(
     role: 'buyer' | 'seller',
@@ -26,18 +30,21 @@ export class AgentExecutor {
   }
 
   /**
-   * Execute user request
+   * Execute user request (SDK AgentExecutor interface)
    */
-  async execute(context: ExecutionContext, eventBus: EventBus): Promise<void> {
-    const { message, taskId } = context;
-    const userMessage = this.extractTextFromMessage(message);
+  async execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void> {
+    const { userMessage, taskId, contextId } = requestContext;
+    const userText = this.extractTextFromMessage(userMessage);
 
     console.log(`🤖 Agent Executor (${this.role}): Processing request`);
-    console.log(`📝 User message: ${userMessage}`);
+    console.log(`📝 User message: ${userText}`);
+
+    // Mark task as active
+    this.activeTasks.add(taskId);
 
     try {
       // Step 1: Select appropriate tools using AI
-      const planResponse = await this.selectToolWithAI(userMessage);
+      const planResponse = await this.selectToolWithAI(userText);
 
       // Check if multi-step or single-step
       const steps = planResponse.steps || [{ toolName: planResponse.toolName, toolParams: planResponse.toolParams }];
@@ -78,7 +85,7 @@ export class AgentExecutor {
           const stepMessage = this.createAgentMessage(
             `Step ${i + 1}/${steps.length}: Successfully executed ${step.toolName}`,
             result,
-            context.contextId,
+            contextId,
             taskId
           );
           eventBus.publish(stepMessage);
@@ -89,13 +96,13 @@ export class AgentExecutor {
 
       // Step 3: Publish final summary
       const summary = steps.length > 1
-        ? `Successfully completed ${steps.length} steps:\n${steps.map((s, i) => `${i + 1}. ${s.toolName}`).join('\n')}`
+        ? `Successfully completed ${steps.length} steps:\n${steps.map((s: any, i: number) => `${i + 1}. ${s.toolName}`).join('\n')}`
         : `Successfully executed ${steps[0].toolName}`;
 
       const finalMessage = this.createAgentMessage(
         summary,
         steps.length === 1 ? results[0].result : results,
-        context.contextId,
+        contextId,
         taskId
       );
 
@@ -109,13 +116,42 @@ export class AgentExecutor {
       const errorMessage = this.createAgentMessage(
         `Error: ${error instanceof Error ? error.message : String(error)}`,
         null,
-        context.contextId,
+        contextId,
         taskId
       );
 
       eventBus.publish(errorMessage);
       eventBus.finished();
+    } finally {
+      // Remove from active tasks
+      this.activeTasks.delete(taskId);
     }
+  }
+
+  /**
+   * Cancel a running task (SDK AgentExecutor interface)
+   */
+  async cancelTask(taskId: string, eventBus: ExecutionEventBus): Promise<void> {
+    console.log(`🚫 Canceling task: ${taskId}`);
+
+    if (!this.activeTasks.has(taskId)) {
+      console.warn(`Task ${taskId} not found in active tasks`);
+      return;
+    }
+
+    // Remove from active tasks
+    this.activeTasks.delete(taskId);
+
+    // Publish cancellation event
+    const cancelMessage = this.createAgentMessage(
+      'Task has been canceled',
+      null,
+      '', // contextId will be set by SDK
+      taskId
+    );
+
+    eventBus.publish(cancelMessage);
+    eventBus.finished();
   }
 
   /**
@@ -214,15 +250,15 @@ Always return valid JSON.`;
   }
 
   /**
-   * Extract text from message
+   * Extract text from message (SDK Message type)
    */
   private extractTextFromMessage(message: Message): string {
-    const textParts = message.parts.filter((p): p is { kind: 'text'; text: string } => p.kind === 'text');
-    return textParts.map(p => p.text).join(' ');
+    const textParts = message.parts.filter((p: any) => p.kind === 'text');
+    return textParts.map((p: any) => p.text).join(' ');
   }
 
   /**
-   * Create agent message
+   * Create agent message (SDK Message type)
    */
   private createAgentMessage(
     text: string,
@@ -230,7 +266,7 @@ Always return valid JSON.`;
     contextId: string,
     taskId: string
   ): Message {
-    const parts: Part[] = [
+    const parts: any[] = [
       { kind: 'text', text }
     ];
 
@@ -239,13 +275,12 @@ Always return valid JSON.`;
     }
 
     return {
+      kind: 'message',
       messageId: `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       role: 'agent',
       parts,
-      kind: 'message',
       contextId,
-      taskId,
-      timestamp: new Date().toISOString()
-    };
+      taskId
+    } as Message;
   }
 }
