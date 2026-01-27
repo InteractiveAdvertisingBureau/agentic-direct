@@ -452,10 +452,6 @@ curl -X POST http://localhost:3000/a2a/buyer/jsonrpc \
 - Ensure reverse proxy sets `X-Forwarded-Proto` and `X-Forwarded-Host`
 - Or set `PROTOCOL` and `HOST` environment variables
 
-## License
-
-MIT
-
 ## Credits
 
 - Built with [A2A Protocol v0.3.0](https://a2a.dev)
